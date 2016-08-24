@@ -13,8 +13,10 @@ import stringutil.Unicode
   */
 object TestDataSetGenerator {
   def generateTrainingAndTestSet(inputRDD:RDD[Triple]) = {
-    val shotAndActivityPairRDD = inputRDD.filter{case (s, p ,o) => p.contains(HAS_ACTIVITY)}.map{case (s, p, a) => (Unicode.decode(s), Unicode.decode(a))}
-    val shotAndTriplePairRDD = inputRDD.filter{case (s, p ,o) => s.contains("Shot")}
+    val shotAndActivityPairRDD = inputRDD.filter{case (s, p ,o) =>
+      p.contains(HAS_ACTIVITY)}.map{case (s, p, a) => (Unicode.decode(s), Unicode.decode(a))}
+    val shotAndTriplePairRDD = inputRDD.filter{case (s, p ,o) =>
+      s.contains("Shot")}.filter{case (s, p, o) => !p.contains(RDF_LABEL) || !p.contains(RDF_TYPE)}
       .map{case (s, p, a) => (Unicode.decode(s), (Unicode.decode(s), Unicode.decode(p), Unicode.decode(a)))}
 
     val dataSetRDD = shotAndActivityPairRDD.join(shotAndTriplePairRDD)
@@ -25,5 +27,9 @@ object TestDataSetGenerator {
 
     val activityContainedInShotRDD = getActivityContainedInShotRDD(inputRDD).map{case (a, s) => (a, s.length)}
     activityContainedInShotRDD.join(dataSetRDD).sortBy(_._2._1,false)
+  }
+
+  def generateSmallDataSet(inputRDD:RDD[Triple]) = {
+
   }
 }
