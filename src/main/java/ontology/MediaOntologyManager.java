@@ -42,7 +42,7 @@ public class MediaOntologyManager {
         OWLOntology ontology = manager.loadOntologyFromOntologyDocument(new File(filePath));
 
         Reasoner reasoner = new Reasoner(ontology);
-        System.out.println(reasoner.isConsistent());
+//        System.out.println(reasoner.isConsistent());
 
         return outputResult(manager, reasoner, classNameIRI);
     }
@@ -54,7 +54,7 @@ public class MediaOntologyManager {
         // get all instances of automadedActivity class
         NodeSet<OWLNamedIndividual> individuals = reasoner.getInstances( automadedActivityClass, false);
 
-        System.out.println("총 [ "+ classNameIRI + "] Infered Instance 갯수 : " + individuals.getNodes().size());
+//        System.out.println("총 [ "+ classNameIRI + "] Infered Instance 갯수 : " + individuals.getNodes().size());
 
         List<String> inferedInstanceArray = new ArrayList<String>();
         for(Node<OWLNamedIndividual> sameInd : individuals) {

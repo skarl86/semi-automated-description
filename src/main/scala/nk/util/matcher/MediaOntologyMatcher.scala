@@ -15,6 +15,13 @@ object MediaOntologyMatcher {
   def isObject(str:String) = {
     str.contains(HAS_AURAL) || str.contains(HAS_VISUAL) || str.contains(WHAT_OBJECT)
   }
+
+  def isShot(spo:Triple) = {
+    spo._3.contains("<http://www.personalmedia.org/soongsil-diquest#Shot>")
+  }
+  def isEvent(spo:Triple) = {
+    spo._1.contains("Video") && spo._2.contains("type") && spo._3.contains("Event")
+  }
   /**
     *
     * @param videoID
@@ -92,6 +99,18 @@ object MediaOntologyMatcher {
     }
   }
 
+  /**
+    *
+    */
+  def eraseEventURI(str:String): String = {
+    val reg = new Regex("#([a-zA-Z].+)>")
+    if(reg == null)
+    {
+      str
+    }else{
+      reg.findAllIn(str).matchData.next().group(1)
+    }
+  }
   /**
     *
     * @param propertyURI

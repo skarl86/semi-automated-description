@@ -23,11 +23,7 @@ object SparkUtil {
     * @return Unique 한 path
     */
   def generatePath(path:String = ""): String ={
-    val now = Calendar.getInstance().getTime()
-    val minuteFormat = new SimpleDateFormat("yyyyhhmmss")
-    val currentMinuteAsString = minuteFormat.format(now)
-
-    "output/" + List(path, currentMinuteAsString).mkString("-")
+    "output/" + List(StringUtil.getCurrentDate(), path).mkString("-")
   }
 
   /**
