@@ -61,7 +61,12 @@ object GeneratorDescription {
     * @param printResult
     * @return
     */
-  def generateDescription(sc:SparkContext, objectFrequencyResults:Array[(String, Int, (Int, scala.collection.mutable.ListMap[String, Int]))], numberOfObject:Int = 5, alpha:Double = 0.0, writeFile:Boolean = false, printResult:Boolean = false) = {
+  def generateDescription(sc:SparkContext,
+                          objectFrequencyResults:Array[(String, Int, (Int, scala.collection.mutable.ListMap[String, Int]))],
+                          numberOfObject:Int = 5,
+                          alpha:Double = 0.0,
+                          writeFile:Boolean = false,
+                          printResult:Boolean = false) = {
     val sqlContext = initSparkSQLContext(sc)
     val resultDescriptionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, List[String]]]()
 
@@ -359,7 +364,7 @@ object GeneratorDescription {
     // Event에 Object 출현 빈도값들의 평균 값을 구한다.
     val mean = frequencyDF.agg(avg("count")).map(row => row.getDouble(0)).collect()(0)
 
-    DebugUtil.printProgressState(String.format("Standard deviation = %s", stdd.toString))
+    DebugUtil.printProgressState(String.format("Standard dcaleviation = %s", stdd.toString))
     DebugUtil.printProgressState(String.format("Mean = %s", mean.toString))
 
     // 정규편차(Normal Distribution)값을 구하기 위한 객체를 생성.
@@ -386,12 +391,17 @@ object GeneratorDescription {
 
     DebugUtil.printProgressState("Threshold value = " + threshold)
     DebugUtil.printProgressState("Alpha = " + alpha)
-//    sqlContext.createDataFrame(rows, schema).show()
+
+    /**
+      * 결과값 출력을 위한 테스트 코드.
+      */
+    sqlContext.createDataFrame(rows, schema).coalesce(1).write.format(DATAFRAME_OUTPUT_FORMAT).save(generatePath("RESULT-TEST"))
+
     val resultRDD  = sqlContext.createDataFrame(rows, schema)
       .orderBy(desc("cdf_value"))
       .limit(numberOfObject)
       .map(row => (row.getString(0), row.getDouble(1)))
-      .filter{case (objName, cdf) => !(objName.contains("WhatObject") || objName.contains("Position"))} // "WhatObject", "Position"
+      .filter{case (objName, cdf) => objName.startsWith("Visual")} // "WhatObject", "Position"
       .filter{case (objName, cdf) => (meanProbability-alpha) <= cdf }
       .map{case (objName, cdf) =>
         if(threshold <= cdf){

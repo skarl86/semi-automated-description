@@ -21,6 +21,7 @@ import ontology.MediaOntologyManager
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
+import stringutil.Unicode
 
 import scala.xml.{XML, PrettyPrinter, Node}
 import scala.collection.JavaConverters._
@@ -29,22 +30,29 @@ object MainProgram {
 
   val NUM_OF_ACTIVITY_FOR_EXPERIMENT = 10
   val NUM_OF_OBJECT_FOR_MODEL = 10
-  val ALPHA_OF_STANDARD_DISTRIBUTION = 0.2
+  val ALPHA_OF_STANDARD_DISTRIBUTION = 0.0
+//  val NTRIPLE_PATH = "data/n3/AmusementPark_n3,data/n3/BirthdayParty_n3,data/n3/Cook_n3,data/n3/Pet_n3"//"data/personalMedia.n3"
+  val NTRIPLE_PATH = "data/new_n3/AmusementPark_n3_thumb,data/new_n3/Bicycle_stunt_n3_thumb,data/new_n3/BirthdayParty_n3_thumb,data/new_n3/Camping_n3_thumb,data/new_n3/Climbing_n3_thumb,data/new_n3/Cook_n3_thumb,data/new_n3/Cute_festival_n3_thumb,data/new_n3/Entrance_ceremony_n3_thumb,data/new_n3/First_birthday_n3_thumb,data/new_n3/Fishing_n3_thumb,data/new_n3/Golf_n3_thumb,data/new_n3/GraduationCeremony_n3_thumb,data/new_n3/Makeup_n3_thumb,data/new_n3/Pet_n3_thumb,data/new_n3/Tod_n3_thumb,data/new_n3/Wedding_n3_thumb"
 
   def main(args: Array[String]) {
     val alpha = List(0.0, 0.05, 0.1, 0.15, 0.20, 0.25)
     val nObject = NUM_OF_OBJECT_FOR_MODEL
 
-    val sc = initSparkContext()
+    val sc = initSparkContext("Auto Rule")
     val totalAccuracyList = scala.collection.mutable.ListBuffer[List[Double]]()
 
-    alpha.foreach{ap =>
-      totalAccuracyList += run(sc, nObject, ap)
-    }
-
-    totalAccuracyList.foreach{accList =>
-      println(accList.sum / accList.size)
-    }
+//    alpha.foreach{ap =>
+//      totalAccuracyList += run(sc, nObject, ap)
+//    }
+//
+//    totalAccuracyList.foreach{accList =>
+//      println(accList.sum / accList.size)
+//    }
+//    decodeNtripleAndSave(sc, "/Users/NK/Downloads/new_bic.nt")
+    run(sc, NUM_OF_OBJECT_FOR_MODEL, ALPHA_OF_STANDARD_DISTRIBUTION)
+  }
+  def decodeNtripleAndSave(sc:SparkContext, inputFilePath:String) = {
+    sc.textFile(inputFilePath).map(Unicode.decode).coalesce(1).saveAsTextFile(generatePath("RDF2TRIPLE"))
   }
 
   def run(sc:SparkContext, nOfObject:Int, alpha:Double) = {
@@ -53,8 +61,7 @@ object MainProgram {
       */
     DebugUtil.printCurrentPhase("Spark Setting")
 
-    val dataPath = "data/personalMedia.n3"
-    val inputTripleRDD = sc.textFile(dataPath).mapPartitions(parseNTriple, true)
+    val inputTripleRDD = sc.textFile(NTRIPLE_PATH).mapPartitions(parseNTriple, true)
 
     //    val activityContainedShotArray = getActivityContainedInShotRDD(inputTripleRDD)
     //      .map{case (a, s) => (a, s.length, s)}.sortBy(_._2, false)
@@ -89,7 +96,7 @@ object MainProgram {
       */
     DebugUtil.printCurrentPhase("Calculating Object Frequency")
     val objectFrequencyPerActivity = calculateObejctFreqencyInActivity(classifiedActivity)
-
+    objectFrequencyPerActivity.coalesce(1).saveAsTextFile(generatePath("Object-Frequency-in-Actvity"))
     /**
       * 2 -2. Activity가 포함된 shot 갯수를 구한다.
       * 예) (Activity1, # of Activity contained in Shot)
@@ -119,6 +126,7 @@ object MainProgram {
 
     val objectFrequencyResultRDD = objectFrequencyPerActivity.join(activityAndNumOfShotRDD)
       .map{case (a, b) => (a, b._2, b._1)}.sortBy(_._2, false)
+    objectFrequencyResultRDD.coalesce(1).saveAsTextFile(generatePath("Object-Freq-Resrt"))
 
     /**
       * 3. Object Frequency를 기반으로 Description 모델을 생성.
@@ -126,7 +134,7 @@ object MainProgram {
     DebugUtil.printCurrentPhase(String.format("Generating Automated Description : # of Activity = %s, # of Top Object = %s",
       String.valueOf(NUM_OF_ACTIVITY_FOR_EXPERIMENT), String.valueOf(nOfObject)))
     val result = generateDescription(sc, objectFrequencyResultRDD.take(NUM_OF_ACTIVITY_FOR_EXPERIMENT),
-      alpha = alpha, numberOfObject = nOfObject, printResult = true, writeFile = false)
+      alpha = alpha, numberOfObject = nOfObject, printResult = true, writeFile = true)
     //    DebugUtil.printCurrentPhase("Generating OWL using Automated Description")
     val newOwl = generateDescriptionToXML(result)
 

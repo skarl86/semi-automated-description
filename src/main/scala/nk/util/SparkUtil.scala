@@ -39,9 +39,9 @@ object SparkUtil {
     *
     * @return
     */
-  def initSparkContext(): SparkContext = {
+  def initSparkContext(appName:String): SparkContext = {
     setLogLevel(Level.WARN)
-    val conf = new SparkConf().setAppName("Auto Rule").setMaster("local[*]")
+    val conf = new SparkConf().setAppName(appName).setMaster("local[*]")
     new SparkContext(conf)
   }
 
